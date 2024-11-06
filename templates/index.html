@@ -42,7 +42,7 @@
             z-index: 1000;
         }
     </style>
-     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
     <script type="importmap">
         {
             "imports": {
@@ -66,56 +66,65 @@
         <input type="range" id="param4-slider" class="slider" min="0" max="100" value="40">
         <div id="param4-display" class="value-display">Proton density: 40</div>
 
-        <div id="result"></div>
+        
     </div>
 
     <div id="map"></div>
     
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
 
-
     <script type="module" src="{{ url_for('static', filename='js/main.js') }}"></script>
     <script>
+        // Initialize the map
+        var map = L.map('map').setView([0, 0], 2); // Initial view set to 0, 0 (equator)
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
         // Function to update the display value and make a prediction
         async function updatePrediction() {
-    const kp_index = document.getElementById('param1-slider').value;
-    const solar_wind = document.getElementById('param2-slider').value;
-    const bz = document.getElementById('param3-slider').value;
-    const proton_density = document.getElementById('param4-slider').value;
+            const kp_index = document.getElementById('param1-slider').value;
+            const solar_wind = document.getElementById('param2-slider').value;
+            const bz = document.getElementById('param3-slider').value;
+            const proton_density = document.getElementById('param4-slider').value;
 
-    // Update the display values
-    document.getElementById('param1-display').innerText = `KP index: ${kp_index}`;
-    document.getElementById('param2-display').innerText = `Solar wind: ${solar_wind}`;
-    document.getElementById('param3-display').innerText = `BZ: ${bz}`;
-    document.getElementById('param4-display').innerText = `Proton density: ${proton_density}`;
+            // Update the display values
+            document.getElementById('param1-display').innerText = `KP index: ${kp_index}`;
+            document.getElementById('param2-display').innerText = `Solar wind: ${solar_wind}`;
+            document.getElementById('param3-display').innerText = `BZ: ${bz}`;
+            document.getElementById('param4-display').innerText = `Proton density: ${proton_density}`;
 
-    // Fetch prediction from the server
-    const response = await fetch('/predict', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            kp_index,
-            solar_wind,
-            bz,
-            proton_density
-        })
-    });
+            // Fetch prediction from the server
+            const response = await fetch('/predict', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    kp_index,
+                    solar_wind,
+                    bz,
+                    proton_density
+                })
+            });
 
-    const result = await response.json();
-    document.getElementById('result').innerText = `Predicted Location - Latitude: ${result.latitude}, Longitude: ${result.longitude}`;
+            const result = await response.json();
+            console.log(result);
+            
 
-    // Dispatch a custom event to add the marker
-    const predictionEvent = new CustomEvent('predictionUpdate', {
-        detail: {
-            latitude: result.latitude,
-            longitude: result.longitude
+            // Add marker to the map
+            var latLng = [result.latitude, result.longitude];
+            L.marker(latLng).addTo(map).bindPopup(`Predicted Location:<br>Latitude: ${result.latitude}<br>Longitude: ${result.longitude}`).openPopup();
+
+            // Dispatch a custom event to add the marker
+            const predictionEvent = new CustomEvent('predictionUpdate', {
+                detail: {
+                    latitude: result.latitude,
+                    longitude: result.longitude
+                }
+            });
+            document.dispatchEvent(predictionEvent);
         }
-    });
-    document.dispatchEvent(predictionEvent);
-}
-
 
         // Add event listeners to sliders
         document.getElementById('param1-slider').addEventListener('input', updatePrediction);

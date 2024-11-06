@@ -72,10 +72,10 @@ function handleWindowResize() {
 window.addEventListener('resize', handleWindowResize, false);
 
 // Initialize Leaflet map
-const map = L.map('map').setView([0, 0], 2);  // Set to (0,0) as default view
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 18,
-}).addTo(map);
+// const map = L.map('map').setView([0, 0], 2);  // Set to (0,0) as default view
+// L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+//     maxZoom: 18,
+// }).addTo(map);
 
 function onMouseClick(event) {
     const mouse = new THREE.Vector2();
@@ -98,6 +98,26 @@ function onMouseClick(event) {
         L.marker([latitude, longitude]).addTo(map);
 
         console.log(`Latitude: ${latitude.toFixed(5)}, Longitude: ${longitude.toFixed(5)}`);
+        // Update the sliders based on the latitude and longitude
+        const kp_index = latitude;  // Just an example, you can change this mapping logic as needed
+        const solar_wind = longitude;  // Just an example, change as needed
+        const bz = Math.abs(latitude);  // Example mapping, modify as needed
+        const proton_density = Math.abs(longitude);  // Example mapping, modify as needed
+
+        // Update the slider display values
+        document.getElementById('param1-slider').value = kp_index;
+        document.getElementById('param2-slider').value = solar_wind;
+        document.getElementById('param3-slider').value = bz;
+        document.getElementById('param4-slider').value = proton_density;
+
+        // Update the displayed values
+        document.getElementById('param1-display').innerText = `KP index: ${kp_index}`;
+        document.getElementById('param2-display').innerText = `Solar wind: ${solar_wind}`;
+        document.getElementById('param3-display').innerText = `BZ: ${bz}`;
+        document.getElementById('param4-display').innerText = `Proton density: ${proton_density}`;
+
+        // Optionally, trigger the prediction update as well
+        updatePrediction();
     }
 }
 
