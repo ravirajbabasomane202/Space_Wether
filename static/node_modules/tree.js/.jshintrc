@@ -1,0 +1,9 @@
+{
+	"maxerr": 10000,
+	"asi": true,     /* don't bug me with missing semicolons warnings */
+	"undef": true,
+	"unused": true,
+	"node": true,    /* assume node.js global variables */
+	"sub": true,     /* suppress warning for x['hello'] instead of x.hello */
+  "laxcomma": true /* allow leading comma notation */
+}
