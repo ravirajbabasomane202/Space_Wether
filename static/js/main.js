@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'jsm/controls/OrbitControls.js';
 import getStarfield from './getStarfield.js';
-import { getFresnelMat } from './getFresnelMat.js';
 
 const w = window.innerWidth;
 const h = window.innerHeight;
@@ -51,20 +50,12 @@ const cloudsMesh = new THREE.Mesh(geometry, cloudsMat);
 cloudsMesh.scale.setScalar(1.003);
 earthGroup.add(cloudsMesh);
 
-const fresnelMat = getFresnelMat();
-const glowMesh = new THREE.Mesh(geometry, fresnelMat);
-glowMesh.scale.setScalar(1.01);
-earthGroup.add(glowMesh);
-
 const stars = getStarfield({ numStars: 2000 });
 scene.add(stars);
 
 const sunLight = new THREE.DirectionalLight(0xffffff, 2.0);
 sunLight.position.set(-2, 0.5, 1.5);
 scene.add(sunLight);
-
-const markerGroup = new THREE.Group();
-scene.add(markerGroup);
 
 function animate() {
     requestAnimationFrame(animate);
@@ -80,41 +71,11 @@ function handleWindowResize() {
 }
 window.addEventListener('resize', handleWindowResize, false);
 
-async function updateSliders() {
-    try {
-        const response = await fetch('/data');
-        const data = await response.json();
-
-        setSliderAndDisplay('param1', data['KP index']);
-        setSliderAndDisplay('param2', data['Solar wind']);
-        setSliderAndDisplay('param3', data['BZ']);
-        setSliderAndDisplay('param4', data['Proton density']);
-    } catch (error) {
-        console.error('Error fetching parameter data:', error);
-    }
-}
-
-function setSliderAndDisplay(param, value) {
-    document.getElementById(`${param}-slider`).value = value;
-    document.getElementById(`${param}-display`).innerText = `${param.replace('_', ' ')}: ${value}`;
-}
-
-function addMarker(latitude, longitude) {
-    markerGroup.clear();
-
-    const latRad = THREE.MathUtils.degToRad(latitude);
-    const lonRad = THREE.MathUtils.degToRad(longitude);
-    const radius = 1;
-    const x = radius * Math.cos(latRad) * Math.cos(lonRad);
-    const y = radius * Math.sin(latRad);
-    const z = radius * Math.cos(latRad) * Math.sin(lonRad);
-
-    const markerGeometry = new THREE.SphereGeometry(0.02, 16, 16);
-    const markerMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-    const marker = new THREE.Mesh(markerGeometry, markerMaterial);
-    marker.position.set(x, y, z);
-    markerGroup.add(marker);
-}
+// Initialize Leaflet map
+const map = L.map('map').setView([0, 0], 2);  // Set to (0,0) as default view
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 18,
+}).addTo(map);
 
 function onMouseClick(event) {
     const mouse = new THREE.Vector2();
@@ -127,39 +88,17 @@ function onMouseClick(event) {
 
     if (intersects.length > 0) {
         const intersectPoint = intersects[0].point;
-        const latitude = THREE.MathUtils.radToDeg(Math.asin(intersectPoint.y / 1));
-        const longitude = THREE.MathUtils.radToDeg(Math.atan2(intersectPoint.z, intersectPoint.x));
+        const latitude = THREE.MathUtils.radToDeg(Math.asin(intersectPoint.y));
+        let longitude = THREE.MathUtils.radToDeg(Math.atan2(intersectPoint.z, intersectPoint.x));
+        if (longitude < -180) longitude += 360;
+        if (longitude > 180) longitude -= 360;
 
-        updatePrediction(latitude, longitude);
+        // Update map view and add marker
+        map.setView([latitude, longitude], 4);
+        L.marker([latitude, longitude]).addTo(map);
+
+        console.log(`Latitude: ${latitude.toFixed(5)}, Longitude: ${longitude.toFixed(5)}`);
     }
 }
-
-async function updatePrediction(latitude, longitude) {
-    try {
-        const response = await fetch('/predict', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ latitude, longitude })
-        });
-
-        const result = await response.json();
-        document.getElementById('result').innerText = 
-            `KP Index: ${result.kp_index}, Solar Wind Speed: ${result.solar_wind_speed}, BZ: ${result.bz}, Proton Density: ${result.proton_density}`;
-        
-        const predictionEvent = new CustomEvent('predictionUpdate', { detail: { latitude, longitude } });
-        document.dispatchEvent(predictionEvent);
-    } catch (error) {
-        console.error('Prediction update failed:', error);
-    }
-}
-
-updateSliders();
-
-document.addEventListener('predictionUpdate', (event) => {
-    const { latitude, longitude } = event.detail;
-    addMarker(latitude, longitude);
-});
 
 window.addEventListener('click', onMouseClick);

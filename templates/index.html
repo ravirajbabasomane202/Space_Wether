@@ -31,7 +31,18 @@
             font-size: 16px;
             color: #333;
         }
+        #map {
+            position: absolute;
+            left: 10px;
+            bottom: 10px;
+            width: 350px;
+            height: 250px;
+            border-radius: 8px;
+            overflow: hidden;
+            z-index: 1000;
+        }
     </style>
+     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
     <script type="importmap">
         {
             "imports": {
@@ -57,6 +68,12 @@
 
         <div id="result"></div>
     </div>
+
+    <div id="map"></div>
+    
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+
+
     <script type="module" src="{{ url_for('static', filename='js/main.js') }}"></script>
     <script>
         // Function to update the display value and make a prediction
